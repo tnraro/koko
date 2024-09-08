@@ -1,5 +1,6 @@
 certifi==2024.8.30
 charset-normalizer==3.3.2
+duckdb==1.0.1.dev5313
 filelock==3.16.0
 fsspec==2024.9.0
 huggingface-hub==0.24.6
