@@ -1,3 +1,6 @@
+import math
+
 def scoreIndicator(score: float):
   n = round(score * 10)
-  return ("🟩" * max(0, int(n / 2))) + ("" if n % 2 == 0 else "🟨")
+  pos = n > 0
+  return (("🟩" if pos else "🟥") * max(0, abs(math.trunc(n / 2)))) + ("" if n % 2 == 0 else ("🟨" if pos else "🟧"))
