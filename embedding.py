@@ -1,25 +1,30 @@
-from sentence_transformers import SentenceTransformer, util
-from torch import Tensor
+from sentence_transformers import SentenceTransformer
+import db
 
-tensorByWord: dict[str, Tensor] = {}
+def embedding(model: SentenceTransformer, word: str):
+  e = db.selectWordEmbedding(word)
+  if e != None:
+    return e[1]
+  else:
+    embedding = model.encode(word)
+    db.insertWordEmbedding(word, embedding)
+    return embedding
 
-def embedding(model: SentenceTransformer, s: str | list[str]) -> Tensor:
-  if (isinstance(s, str)):
-    if s in tensorByWord:
-      return tensorByWord[s]
-    else:
-      tensor = model.encode(s, convert_to_tensor=True)
-      tensorByWord[s] = tensor
-      return tensor
-  elif (isinstance(s, list)):
-    # TODO: caching
-    tensor = model.encode(s, convert_to_tensor=True)
-    for i, a in enumerate(s):
-      tensorByWord[a] = tensor[i]
-    return tensor
+def prepare(model: SentenceTransformer):
+  words = db.selectWordsWithoutEmbedding()
+  if len(words) == 0:
+    return
+  embeddings = model.encode(words)
+  db.dropVssIndices()
+  db.insertWordEmbeddings([(word, embeddings[i]) for i, word in enumerate(words)])
+  db.createVssIndices()
   
-  
-def similarity(model: SentenceTransformer, answerTensor: Tensor, s: str):
-  tensor = embedding(model, s)
-  similarity = util.pytorch_cos_sim(answerTensor, tensor)[0, 0].item()
-  return similarity
+def similarity(model: SentenceTransformer, a: str, b: str):
+  embedding(model, a)
+  embedding(model, b)
+  return db.similarity(a, b)
+
+def guess(model: SentenceTransformer, answer: str, guess: str):
+  embedding(model, answer)
+  embedding(model, guess)
+  return db.guess(answer, guess)
